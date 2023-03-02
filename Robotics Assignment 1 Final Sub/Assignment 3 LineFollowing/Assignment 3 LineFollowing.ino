@@ -15,6 +15,7 @@ Zumo32U4LineSensors lineSensors;
 Zumo32U4Buzzer buzzer;
 Zumo32U4LCD display;
 
+//Global variables I will be using throughout the program
 const int turn_speed = 150;
 const int turn_duration = 550;
 unsigned int sensors[3];
@@ -24,6 +25,7 @@ int blackThreshold = 600;
 int personsSaved = 0;
 int selectedMode = 0;
 
+// Mick likes starwars so this is for him
 const char march[] PROGMEM = 
 "! O2 T100 MS"
 "a8. r16 a8. r16 a8. r16 f8 r16 >c16" 
@@ -55,6 +57,9 @@ void setup() {
   lineSensors.initThreeSensors();
   Serial.begin(9600);
 }
+
+// Various turn functions, these are only semi accurate as they are timed to milliseconds not the gyro
+// This means if new batterys are put in the robot these will have to be reconfigured
 void turn90Clockwise(){
   motors.setSpeeds(turn_speed, -turn_speed);
   delay(turn_duration);
@@ -78,6 +83,7 @@ void turn45AntiClockwise(){
   motors.setSpeeds(0, 0);
 }
 
+// Push from maze function that gets run in mode 1 where it increments the counter of people found and sends this to notification to the GUI.
 void mode1PushFromMaze(){
   display.clear();
   display.println(personsSaved + "People");
@@ -87,6 +93,7 @@ void mode1PushFromMaze(){
   personsSaved++;
   Serial.write('o');
 }
+// Push from maze for modes 2 and 3. This will push the object from the maze until the sensors detect a black line underneath and automatically turn as part of the autonomous features.
 void pushFromMaze(){
   lineSensors.read(sensors);
   if(sensors[1] > blackThreshold-300 || sensors[2] > blackThreshold){
@@ -106,6 +113,7 @@ void pushFromMaze(){
     pushFromMaze();
   }
 }
+// Prints debugs vals in the arduino console so that the user can see the line sensor values if they need to be changed for the thresholds
 void printDebugVals(){
   proxSensors.read();
   lineSensors.read(sensors);
@@ -127,13 +135,14 @@ void printDebugVals(){
   Serial.print("\t");
   Serial.println();
 }
+// Mode 1 starts for fully autonomous control 
 void mode1(){
-  int incomingByte = 0; // for incoming serial data
+  int incomingByte = 0; // For incoming serial data
   display.print("Mode 1");
   if (Serial.available() > 0) {
     sw_mil.reset();
     
-    // read the incoming byte:
+    // Read the incoming byte
     incomingByte = Serial.read();
 
     if (incomingByte == 'w'){
@@ -165,6 +174,7 @@ void mode1(){
       delay(20);
     }
     if(incomingByte == 'e'){
+      // This is when the user wishes to denote a person has been found, E is pushed
       Serial.write('e');
       mode1PushFromMaze();
     }
@@ -176,11 +186,10 @@ void mode1(){
 
   }
 }
-void mode2CourseCorrect(){
-
-}
+// Mode 2 which is semi autonomous 
+// Very similar to mode 1
 void mode2(){
-  int incomingByte = 0; // for incoming serial data
+  int incomingByte = 0; // For incoming serial data
   display.print("Mode 2");
   lineSensors.read(sensors);
   if(sensors[0] > blackThreshold && sensors[1] > blackThreshold && sensors[2] > blackThreshold){
@@ -192,6 +201,7 @@ void mode2(){
   if(sensors[2] > blackThreshold){
     turn45AntiClockwise();
   }
+  // How ever if any of the line sensors detect a black line they stop and turn accordingly so the robot does not stray 
 
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -218,6 +228,8 @@ void mode2(){
       motors.setSpeeds(200, -200);
     }
     if(incomingByte == 'e'){
+      // This is when the user wishes to denote a person has been found, E is pushed and the semo auto mode makes the robot push the object out the maze until the 
+      // line sensors detect it has gone over a black line
       Serial.write('e');
       pushFromMaze();
     }
@@ -227,8 +239,9 @@ void mode2(){
 
   }
 }
+// Full auto mode
 void mode3(){
-
+  // Some motivational music that plays while the robot is searching
   if (buzzer.isPlaying())
     {  
     }
@@ -236,28 +249,33 @@ void mode3(){
     {
       buzzer.playFromProgramSpace(march);
     }
-  sw_secs.start();
-  lineSensors.read(sensors);
-
+  sw_secs.start();// Timer starting which is used later
+  lineSensors.read(sensors); // Line sensors read as often as it can be to get up to date information
+  // Simple code for following the left wall, should the middle sensor not detect a line that means the zumo has to go anticlockwise 
   if(sensors[1] < blackThreshold-300)
   {
     motors.setSpeeds(0,200);
   }
+  // Similar thing with the left sensor, the robot sort of shuffles left and right to keep on the left line
   if(sensors[0] > blackThreshold)
   {
     motors.setSpeeds(200,0);
   }
   if(sensors[0] > blackThreshold && sensors[1] > blackThreshold-300)
   {
+    // If a wall is detected robot must turn, this could be changed depending on the battery level and surface which the robot is moving on 
     motors.setSpeeds(100,-300);
     delay(350);
   }
   proxSensorsLoop();
+  // Prox sensor loop run to detect if anything is seen
 }
 void loop() 
 {
+  // Main loop where values are checked as often as they can be to ensure accurate data
   proxSensors.read();
   lineSensors.read(sensors);
+  // Here modes are selected by pressing the buttons which saves a mode value which is then continuously run
   if(buttonA.isPressed()){
       selectedMode = 1;
       Serial.println("Mode 1 selected");
@@ -281,12 +299,14 @@ void loop()
   }
 }
 void proxSensorsLoop(){
+  // Prox sensor loop run and sensors are checked to get up to date information
   proxSensors.read();
   int leftValue = proxSensors.countsFrontWithLeftLeds();
   int rightValue = proxSensors.countsFrontWithRightLeds();
   lineSensors.read(sensors);
-  if(sw_secs.elapsed() > 2){  
+  if(sw_secs.elapsed() > 2){  // This is important as it means the robot must wait 2 seconds before it can detect another person to stop it detecting the same one
     if (leftValue == proxThreshhold && rightValue == proxThreshhold){
+      // This occurs when the robot is directly facing the object and will then push said object out of the maze using the function mentioned earlier
       buzzer.stopPlaying();
       sw_secs.reset();
       sw_secs.start();
@@ -294,6 +314,7 @@ void proxSensorsLoop(){
       pushFromMaze();
       display.clear();
     }
+    // These 2 if statements must be checked as it allows the zumo to hone in and directly face the object
     if (leftValue == proxThreshhold && rightValue != proxThreshhold){
       motors.setSpeeds(0, 0);
       motors.setSpeeds(-150, 150);
