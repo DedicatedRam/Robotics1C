@@ -86,12 +86,13 @@ void turn45AntiClockwise(){
 // Push from maze function that gets run in mode 1 where it increments the counter of people found and sends this to notification to the GUI.
 void mode1PushFromMaze(){
   display.clear();
-  display.println(personsSaved + "People");
+  display.print(String(personsSaved));
+  display.print(" People");
   buzzer.playNote(NOTE_E(70), 200, 15);
   delay(200);
   buzzer.playNote(NOTE_G(10), 100, 15); 
   personsSaved++;
-  Serial.write('o');
+  Serial.write("personSaved");
 }
 // Push from maze for modes 2 and 3. This will push the object from the maze until the sensors detect a black line underneath and automatically turn as part of the autonomous features.
 void pushFromMaze(){
@@ -106,7 +107,7 @@ void pushFromMaze(){
     delay(150);
     turn90Clockwise();
     personsSaved++;
-    Serial.write('o');
+    Serial.write("personSaved");
   }
   else{
     motors.setSpeeds(120, 120);
@@ -177,6 +178,7 @@ void mode1(){
       // This is when the user wishes to denote a person has been found, E is pushed
       Serial.write('e');
       mode1PushFromMaze();
+      delay(20);
     }
     if(incomingByte == 0){
       motors.setSpeeds(0, 0);
