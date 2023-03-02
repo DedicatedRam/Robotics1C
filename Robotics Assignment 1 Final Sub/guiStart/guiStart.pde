@@ -21,34 +21,35 @@ public void draw() {
   
   
   while (port.available() > 0) {
-    int inByte = port.read();
+    String inByte = port.readString();
     println(inByte);
-    if (inByte =='w'){
+    if (inByte.equals("w")){
     String txt = textarea1.getText();
     textarea1.setText("\n Zumo going forward"+ txt);
     println(inByte);
     }
-    if (inByte =='a'){
+    if (inByte.equals("a")){
     String txt = textarea1.getText();
     textarea1.setText("\n Zumo going left"+ txt);
     println(inByte);
     }
-    if (inByte =='d'){
+    if (inByte.equals("d")){
     String txt = textarea1.getText();
     textarea1.setText("\n Zumo going right"+ txt);
     println(inByte);
     }
-    if (inByte =='s'){
+    if (inByte.equals("s")){
     String txt = textarea1.getText();
     textarea1.setText("\n Zumo going backward"+ txt);
     println(inByte);
     }
-    if (inByte =='e'){
+    if (inByte.equals("e")){
     String txt = textarea1.getText();
     textarea1.setText("\n Person Found"+ txt);
     println(inByte);
     }
-    if(inByte =='o'){
+    if(inByte.equals("personSaved")){
+      println("o entered");
       personsSaved++;
       textfield2.setText("Persons found: " + personsSaved);
     }
